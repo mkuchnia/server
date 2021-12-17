@@ -23,6 +23,7 @@ using namespace std;
 
 const long int serverStartTime = time(0);
 atomic<int> queryNumber(0);
+atomic<int> connectionNumber(0);
 
 int main(int argc, char* argv[])
 {

@@ -25,6 +25,7 @@ void disconnect(int socketDescriptor)
 void client_service(int socketDescriptor)
 {
 	long int connectionStartTime = time(0);
+	connectionNumber++;
 	fd_set socketSet;
 	int valueReaded;
 	int activity;
@@ -92,11 +93,12 @@ void client_service(int socketDescriptor)
 						//answer
 						newObj["status"] = "ok";
 						long int nowTime = time(0);
-						int runtime = nowTime - serverStartTime;
-						newObj["runtime"] = runtime;
+						int serverRuntime = nowTime - serverStartTime;
+						newObj["serverRuntime"] = serverRuntime;
 						int connectionTime = nowTime - connectionStartTime;
 						newObj["connectionTime"] = connectionTime;
 						newObj["queryNumber"] = queryNumber.load();
+						newObj["connectionNumber"] = connectionNumber.load();
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
@@ -119,4 +121,5 @@ void client_service(int socketDescriptor)
 			}
 		}
 	}
+	connectionNumber--;
 }
