@@ -1,13 +1,26 @@
 #include "clientService.hpp"
 #include <iostream>
-#include <arpa/inet.h> //close
-#include <unistd.h> //close
-#include <string.h> //strlen
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <string.h>
+#include <jsoncpp/json/json.h>
 
 #define TRUE 1
 #define FALSE 0
 
 using namespace std;
+
+void disconnect(int socketDescriptor)
+{
+	struct sockaddr_in address;
+	int addrlen;
+	//Somebody disconnected , get his details and print
+	getpeername(socketDescriptor, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+	printf("Host disconnected , ip %s , port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+	//Close the socket
+	close(socketDescriptor);
+}
 
 void client_service(int socketDescriptor)
 {
@@ -24,7 +37,7 @@ void client_service(int socketDescriptor)
 
 	while (!END)
 	{
-		//wait for an activity on the socket , timeout is set
+		//wait for an activity on the socket, timeout is set
 		struct timeval tv = { 10, 0 };
 		activity = select(socketDescriptor + 1, &socketSet, NULL, NULL, &tv);
 
@@ -32,29 +45,44 @@ void client_service(int socketDescriptor)
 		{
 			printf("select error");
 		}
-
-		if (activity == 0)
+		else if (activity == 0)
 		{
 			//cout << "No activity on sd: " << socketDescriptor << endl;
-			close(socketDescriptor);
+			disconnect(socketDescriptor);
 			END = TRUE;
 		}
-
-		if (FD_ISSET(socketDescriptor, &socketSet))
+		else if (FD_ISSET(socketDescriptor, &socketSet))
 		{
 			if ((valueReaded = read(socketDescriptor, buffer, 1024)) == 0)
 			{
 				//cout << "Disconnected sd: " << socketDescriptor << endl;
-				close(socketDescriptor);
+				disconnect(socketDescriptor);
 				END = TRUE;
 			}
 			else
 			{
-				//set the string terminating NULL byte on the end
-				//of the data read
+				//handle the command
+				//set the string terminating NULL byte on the end of the data read
 				buffer[valueReaded] = '\0';
-				printf("%s", buffer);
-				send(socketDescriptor, buffer, strlen(buffer), 0);
+				//parse to JSON
+				Json::Reader reader;
+				Json::Value obj;
+				reader.parse(buffer, obj);
+
+				Json::Value newObj;
+				Json::FastWriter fastWriter;
+				string output;
+
+				if (obj["cmd"] == "END")
+				{
+					//answer
+					newObj["status"] = "ok";
+					output = fastWriter.write(newObj);
+					send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					//action
+					disconnect(socketDescriptor);
+					END = TRUE;
+				}
 			}
 		}
 	}

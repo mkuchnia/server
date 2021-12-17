@@ -5,7 +5,9 @@ cmake_minimum_required (VERSION 3.8)
 
 # Add source to this project's executable.
 find_package(Boost COMPONENTS thread REQUIRED)
-add_executable (server "server.cpp" "server.h" "clientService.cpp" "clientService.hpp")
+find_package(jsoncpp)
+add_executable(server "server.cpp" "server.h" "clientService.cpp" "clientService.hpp")
 target_link_libraries(server Boost::thread)
+target_link_libraries(server jsoncpp_lib)
 
 # TODO: Add tests and install targets if needed.
