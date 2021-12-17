@@ -19,8 +19,10 @@
 using namespace std;
 
 #include <boost/thread.hpp>
-
 #include "clientService.hpp"
+
+long int startTime = time(0);
+
 
 int main(int argc, char* argv[])
 {

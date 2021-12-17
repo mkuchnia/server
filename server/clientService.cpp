@@ -89,7 +89,9 @@ void client_service(int socketDescriptor)
 					{
 						//answer
 						newObj["status"] = "ok";
-						newObj["runtime"] = 123;
+						long int nowTime = time(0);
+						int runtime = nowTime - startTime;
+						newObj["runtime"] = runtime;
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
