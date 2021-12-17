@@ -71,6 +71,7 @@ void client_service(int socketDescriptor)
 				Json::Reader reader;
 				Json::Value obj;
 				reader.parse(buffer, obj);
+				//cout << obj << endl;
 
 				Json::Value newObj;
 				Json::StyledWriter fastWriter;
@@ -99,6 +100,37 @@ void client_service(int socketDescriptor)
 						newObj["connectionTime"] = connectionTime;
 						newObj["queryNumber"] = queryNumber.load();
 						newObj["connectionNumber"] = connectionNumber.load();
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else if (obj["cmd"] == "INC")
+					{
+						//answer
+						newObj["status"] = "ok";
+						long long number = obj["args"]["number"].asInt64();
+						//action
+						int hits;
+						mtxIncrementMap.lock();
+						incrementMap[number]++;
+						hits = incrementMap[number];
+						mtxIncrementMap.unlock();
+						//answer
+						newObj["hits"] = hits;
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else if (obj["cmd"] == "GET")
+					{
+						//answer
+						newObj["status"] = "ok";
+						long long number = obj["args"]["number"].asInt64();
+						//action
+						int hits;
+						mtxIncrementMap.lock();
+						hits = incrementMap[number];
+						mtxIncrementMap.unlock();
+						//answer
+						newObj["hits"] = hits;
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
