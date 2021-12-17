@@ -70,19 +70,45 @@ void client_service(int socketDescriptor)
 				reader.parse(buffer, obj);
 
 				Json::Value newObj;
-				Json::FastWriter fastWriter;
+				Json::StyledWriter fastWriter;
 				string output;
 
-				if (obj["cmd"] == "END")
+				try
+				{
+					if (obj["cmd"] == "END")
+					{
+						//answer
+						newObj["status"] = "ok";
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+						//action
+						disconnect(socketDescriptor);
+						END = TRUE;
+					}
+					else if (obj["cmd"] == "STAT")
+					{
+						//answer
+						newObj["status"] = "ok";
+						newObj["runtime"] = 123;
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else
+					{
+						//answer
+						newObj["status"] = "error";
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+				}
+				catch (...) 
 				{
 					//answer
-					newObj["status"] = "ok";
+					newObj["status"] = "error";
 					output = fastWriter.write(newObj);
 					send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
-					//action
-					disconnect(socketDescriptor);
-					END = TRUE;
 				}
+				
 			}
 		}
 	}
