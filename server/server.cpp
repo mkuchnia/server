@@ -20,75 +20,7 @@ using namespace std;
 
 #include <boost/thread.hpp>
 
-void client_service(int sd)
-{
-	cout << "TEST sd: " << sd << endl;\
-
-	fd_set readfds;
-	int valread;
-	int activity;
-	char buffer[1025];
-	bool END = FALSE;
-
-	while (!END)
-	{
-		//clear the socket set
-		FD_ZERO(&readfds);
-
-		//add master socket to set
-		FD_SET(sd, &readfds);
-
-		////wait for an activity on one of the sockets , timeout is NULL ,
-		////so wait indefinitely
-		//wait 1sec
-		struct timeval tv;
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-
-		activity = select(sd + 1, &readfds, NULL, NULL, &tv);
-
-		if (activity == 0)
-		{
-			cout << "No activity on sd: " << sd << endl;
-			struct sockaddr_in address;
-			int addrlen;
-			//Somebody disconnected , get his details and print
-			getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-			printf("Host disconnected , ip %s , port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-			//Close the socket and mark as 0 in list for reuse
-			close(sd);
-			END = TRUE;
-		}
-
-		if ((activity < 0) && (errno != EINTR))
-		{
-			printf("select error");
-		}
-
-		if (FD_ISSET(sd, &readfds))
-		{
-			if ((valread = read(sd, buffer, 1024)) == 0)
-			{
-				struct sockaddr_in address;
-				int addrlen;
-				//Somebody disconnected , get his details and print
-				getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-				printf("Host disconnected , ip %s , port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-				//Close the socket and mark as 0 in list for reuse
-				close(sd);
-				END = TRUE;
-			}
-			else
-			{
-				//set the string terminating NULL byte on the end
-				//of the data read
-				buffer[valread] = '\0';
-				printf("%s", buffer);
-				send(sd, buffer, strlen(buffer), 0);
-			}
-		}
-	}
-}
+#include "clientService.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -153,19 +85,10 @@ int main(int argc, char* argv[])
 		//add master socket to set
 		FD_SET(master_socket, &readfds);
 
-		////wait for an activity on one of the sockets , timeout is NULL ,
-		////so wait indefinitely
-		//wait 1sec
-		struct timeval tv;
-		tv.tv_sec = 5;
-		tv.tv_usec = 0;
+		//wait for an activity on one of the sockets , timeout is NULL ,
+		//so wait indefinitely
 
-		activity = select(master_socket + 1, &readfds, NULL, NULL, &tv);
-
-		if (activity == 0)
-		{
-			cout << "No activity" << endl;
-		}
+		activity = select(master_socket + 1, &readfds, NULL, NULL, NULL);
 
 		if ((activity < 0) && (errno != EINTR))
 		{
@@ -191,47 +114,11 @@ int main(int argc, char* argv[])
 			{
 				perror("send");
 			}
-
 			puts("Welcome message sent successfully");
 
-			//add new socket to array of sockets
+			//run thread for each client
 			boost::thread t(&client_service, new_socket);
 		}
-
-		//else its some IO operation on some other socket
-		//for (i = 0; i < max_clients; i++)
-		//{
-		//	sd = client_socket[i];
-
-		//	if (FD_ISSET(sd, &readfds))
-		//	{
-		//		//Check if it was for closing , and also read the
-		//		//incoming message
-		//		if ((valread = read(sd, buffer, 1024)) == 0)
-		//		{
-		//			//Somebody disconnected , get his details and print
-		//			getpeername(sd, (struct sockaddr*)&address, \
-		//				(socklen_t*)&addrlen);
-		//			printf("Host disconnected , ip %s , port %d \n",
-		//				inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-
-		//			//Close the socket and mark as 0 in list for reuse
-		//			close(sd);
-		//			client_socket[i] = 0;
-		//		}
-
-		//		//Echo back the message that came in
-		//		else
-		//		{
-		//			//set the string terminating NULL byte on the end
-		//			//of the data read
-		//			buffer[valread] = '\0';
-		//			printf("%s", buffer);
-		//			send(sd, buffer, strlen(buffer), 0);
-		//		}
-		//	}
-		//}
 	}
-
 	return 0;
 }
