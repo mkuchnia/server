@@ -24,6 +24,7 @@ void disconnect(int socketDescriptor)
 
 void client_service(int socketDescriptor)
 {
+	long int connectionStartTime = time(0);
 	fd_set socketSet;
 	int valueReaded;
 	int activity;
@@ -62,6 +63,7 @@ void client_service(int socketDescriptor)
 			else
 			{
 				//handle the command
+				queryNumber++;
 				//set the string terminating NULL byte on the end of the data read
 				buffer[valueReaded] = '\0';
 				//parse to JSON
@@ -90,8 +92,11 @@ void client_service(int socketDescriptor)
 						//answer
 						newObj["status"] = "ok";
 						long int nowTime = time(0);
-						int runtime = nowTime - startTime;
+						int runtime = nowTime - serverStartTime;
 						newObj["runtime"] = runtime;
+						int connectionTime = nowTime - connectionStartTime;
+						newObj["connectionTime"] = connectionTime;
+						newObj["queryNumber"] = queryNumber.load();
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}

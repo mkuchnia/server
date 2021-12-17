@@ -21,11 +21,12 @@ using namespace std;
 #include <boost/thread.hpp>
 #include "clientService.hpp"
 
-long int startTime = time(0);
-
+const long int serverStartTime = time(0);
+atomic<int> queryNumber(0);
 
 int main(int argc, char* argv[])
 {
+
 	int opt = TRUE;
 	int master_socket, addrlen, new_socket, activity, i, valread, sd;
 	int max_sd;
