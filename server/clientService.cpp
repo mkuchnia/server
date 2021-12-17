@@ -9,18 +9,6 @@
 
 using namespace std;
 
-void disconnect(int socketDescriptor)
-{
-	struct sockaddr_in address;
-	int addrlen;
-	//Somebody disconnected , get his details and print
-	getpeername(socketDescriptor, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-	printf("Host disconnected , ip %s , port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-	
-	//Close the socket
-	close(socketDescriptor);
-}
-
 void client_service(int socketDescriptor)
 {
 	fd_set socketSet;
@@ -48,7 +36,7 @@ void client_service(int socketDescriptor)
 		if (activity == 0)
 		{
 			//cout << "No activity on sd: " << socketDescriptor << endl;
-			disconnect(socketDescriptor);
+			close(socketDescriptor);
 			END = TRUE;
 		}
 
@@ -57,7 +45,7 @@ void client_service(int socketDescriptor)
 			if ((valueReaded = read(socketDescriptor, buffer, 1024)) == 0)
 			{
 				//cout << "Disconnected sd: " << socketDescriptor << endl;
-				disconnect(socketDescriptor);
+				close(socketDescriptor);
 				END = TRUE;
 			}
 			else
