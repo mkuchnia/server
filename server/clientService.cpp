@@ -141,27 +141,58 @@ void client_service(int socketDescriptor)
 						string key = obj["args"]["key"].asString();
 						string value = obj["args"]["value"].asString();
 						MYSQL mysql;
-						mysql_init(&mysql); // incjalizacja
+						mysql_init(&mysql);
 
 						if (mysql_real_connect(&mysql, "127.0.0.1", "root", "password", "B", 0, NULL, 0))
 						{
-							string query = "INSERT INTO logs (cmd, `key`, val_before, val_after) VALUES ('WRITE', '" + key + "', (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "'), '" + value + "'); ";
-							cout << query << endl;
-							mysql_query(&mysql, query.c_str());
 							//printf("Connected with MySQL\n");
-
+							//save logs
+							string query = "INSERT INTO logs (cmd, `key`, val_before, val_after) VALUES ('WRITE', '" + key + "', (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "'), '" + value + "'); ";
+							mysql_query(&mysql, query.c_str());
+							//save data
 							mysql_select_db(&mysql, "A");
-							//query = "SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "';";
-							//cout << query << endl;
-							//mysql_query(&mysql, query.c_str());
-							//MYSQL_RES* result = mysql_store_result(&mysql);
-							//MYSQL_ROW row = mysql_fetch_row(result);
-							//string val_before = row[0];
-							//cout << val_before << endl;
-							//answer
 							query = "REPLACE INTO data VALUES ('" + key + "', '" + value + "');";
 							mysql_query(&mysql, query.c_str());
+							//answer
 							newObj["status"] = "ok";
+							mysql_close(&mysql);
+						}
+						else
+						{
+							printf("MySQL error: %d, %s\n", mysql_errno(&mysql), mysql_error(&mysql));
+							//answer
+							newObj["status"] = "error";
+						}
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else if (obj["cmd"] == "READ")
+					{
+						//action
+						string key = obj["args"]["key"].asString();
+						MYSQL mysql;
+						mysql_init(&mysql);
+
+						if (mysql_real_connect(&mysql, "127.0.0.1", "root", "password", "B", 0, NULL, 0))
+						{
+							//printf("Connected with MySQL\n");
+							//save logs
+							string query = "INSERT INTO logs (cmd, `key`, val_before, val_after) VALUES ('READ', '" + key + "', (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "'), (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "')); ";
+							mysql_query(&mysql, query.c_str());
+							//read data
+							query = "SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "';";
+							mysql_query(&mysql, query.c_str());
+							MYSQL_RES* result = mysql_store_result(&mysql);
+							MYSQL_ROW row = mysql_fetch_row(result);
+							string value = "";
+							if (row != NULL)
+							{
+								value = row[0];
+							}
+							//answer
+							newObj["status"] = "ok";
+							newObj["value"] = value;
+							mysql_close(&mysql);
 						}
 						else
 						{
