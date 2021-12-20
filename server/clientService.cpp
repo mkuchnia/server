@@ -1,5 +1,4 @@
 ﻿#include "clientService.hpp"
-#include <iostream>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
@@ -13,13 +12,12 @@ using namespace std;
 
 void disconnect(int socketDescriptor)
 {
-	struct sockaddr_in address;
 	int addrlen;
-	//Somebody disconnected , get his details and print
+	struct sockaddr_in address;
+	//somebody disconnected , get his details and print
 	getpeername(socketDescriptor, (struct sockaddr*)&address, (socklen_t*)&addrlen);
 	printf("Host disconnected , ip %s , port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-
-	//Close the socket
+	//close the socket
 	close(socketDescriptor);
 }
 
@@ -27,11 +25,11 @@ void client_service(int socketDescriptor)
 {
 	long int connectionStartTime = time(0);
 	connectionNumber++;
-	fd_set socketSet;
-	int valueReaded;
-	int activity;
-	char buffer[1025];
+
 	bool END = FALSE;
+	char buffer[1025];
+	int activity, valueReaded;
+	fd_set socketSet;
 
 	//clear the set
 	FD_ZERO(&socketSet);
@@ -41,7 +39,7 @@ void client_service(int socketDescriptor)
 	while (!END)
 	{
 		//wait for an activity on the socket, timeout is set
-		struct timeval tv = { 10, 0 };
+		struct timeval tv = { 30, 0 };
 		activity = select(socketDescriptor + 1, &socketSet, NULL, NULL, &tv);
 
 		if ((activity < 0) && (errno != EINTR))
@@ -132,6 +130,17 @@ void client_service(int socketDescriptor)
 						mtxIncrementMap.unlock();
 						//answer
 						newObj["hits"] = hits;
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else if (obj["cmd"] == "SLEEP")
+					{
+						//answer
+						newObj["status"] = "ok";
+						int delay = obj["args"]["delay"].asInt();
+						//action
+						sleep(delay);
+						//answer
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
