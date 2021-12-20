@@ -203,6 +203,35 @@ void client_service(int socketDescriptor)
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
+					else if (obj["cmd"] == "DEL")
+					{
+					//action
+					string key = obj["args"]["key"].asString();
+					MYSQL mysql;
+					mysql_init(&mysql);
+
+					if (mysql_real_connect(&mysql, "127.0.0.1", "root", "password", "B", 0, NULL, 0))
+					{
+						//printf("Connected with MySQL\n");
+						//save logs
+						string query = "INSERT INTO logs (cmd, `key`, val_before, val_after) VALUES ('DEL', '" + key + "', (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "'), NULL); ";
+						mysql_query(&mysql, query.c_str());
+						//delete data
+						query = "DELETE FROM A.`data` WHERE A.`data`.`key` = '" + key + "';";
+						mysql_query(&mysql, query.c_str());
+						//answer
+						newObj["status"] = "ok";
+						mysql_close(&mysql);
+					}
+					else
+					{
+						printf("MySQL error: %d, %s\n", mysql_errno(&mysql), mysql_error(&mysql));
+						//answer
+						newObj["status"] = "error";
+					}
+					output = fastWriter.write(newObj);
+					send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
 					else
 					{
 						//answer
