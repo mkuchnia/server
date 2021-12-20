@@ -1,4 +1,4 @@
-#include "clientService.hpp"
+﻿#include "clientService.hpp"
 #include <iostream>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -132,6 +132,43 @@ void client_service(int socketDescriptor)
 						mtxIncrementMap.unlock();
 						//answer
 						newObj["hits"] = hits;
+						output = fastWriter.write(newObj);
+						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
+					}
+					else if (obj["cmd"] == "WRITE")
+					{
+						//action
+						string key = obj["args"]["key"].asString();
+						string value = obj["args"]["value"].asString();
+						MYSQL mysql;
+						mysql_init(&mysql); // incjalizacja
+
+						if (mysql_real_connect(&mysql, "127.0.0.1", "root", "password", "B", 0, NULL, 0))
+						{
+							string query = "INSERT INTO logs (cmd, `key`, val_before, val_after) VALUES ('WRITE', '" + key + "', (SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "'), '" + value + "'); ";
+							cout << query << endl;
+							mysql_query(&mysql, query.c_str());
+							//printf("Connected with MySQL\n");
+
+							mysql_select_db(&mysql, "A");
+							//query = "SELECT `value` FROM A.`data` WHERE A.`data`.`key` = '" + key + "';";
+							//cout << query << endl;
+							//mysql_query(&mysql, query.c_str());
+							//MYSQL_RES* result = mysql_store_result(&mysql);
+							//MYSQL_ROW row = mysql_fetch_row(result);
+							//string val_before = row[0];
+							//cout << val_before << endl;
+							//answer
+							query = "REPLACE INTO data VALUES ('" + key + "', '" + value + "');";
+							mysql_query(&mysql, query.c_str());
+							newObj["status"] = "ok";
+						}
+						else
+						{
+							printf("MySQL error: %d, %s\n", mysql_errno(&mysql), mysql_error(&mysql));
+							//answer
+							newObj["status"] = "error";
+						}
 						output = fastWriter.write(newObj);
 						send(socketDescriptor, output.c_str(), strlen(output.c_str()), 0);
 					}
