@@ -9,5 +9,6 @@ find_package(jsoncpp)
 add_executable(server "server.cpp" "server.hpp" "clientService.cpp" "clientService.hpp")
 target_link_libraries(server Boost::thread)
 target_link_libraries(server jsoncpp_lib)
+target_link_libraries(server mysqlclient)
 
 # TODO: Add tests and install targets if needed.

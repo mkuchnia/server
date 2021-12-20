@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <jsoncpp/json/json.h>
+#include <mysql/mysql.h>
 
 #define TRUE 1
 #define FALSE 0
